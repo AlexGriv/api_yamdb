@@ -41,7 +41,7 @@ class MyTokenObtainSerializer(serializers.Serializer):
 
     default_error_messages = {
         "no_active_account": _(
-            "No active account found with the given credentials")
+            "Активная учетная запись с указанными учетными данными не найдена")
     }
 
     def __init__(self, *args, **kwargs):
@@ -92,12 +92,10 @@ class MyTokenObtainPairSerializer(MyTokenObtainSerializer):
 
 
 class UserSelfSerializer(serializers.ModelSerializer):
-    role = serializers.CharField(default='user')
-
     class Meta:
         model = User
         fields = (
-        'username', 'email', 'first_name', 'last_name', 'bio', 'role')
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role')
         read_only_fields = ('username', 'email', 'role')
 
 
@@ -107,7 +105,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-        'username', 'email', 'first_name', 'last_name', 'bio', 'role')
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role')
 
     def create(self, validated_data):
         if validated_data['username'] == 'me':

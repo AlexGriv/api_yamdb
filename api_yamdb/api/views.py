@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
-from rest_framework import status, viewsets, exceptions
+from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -60,9 +60,6 @@ class UserSelfView(APIView):
     def patch(self, request):
         user = User.objects.get(username=request.user.username)
         print(user.role, request.data.get('role'))
-        if user.role == 'user' and request.data.get('role') == 'admin':
-            raise exceptions.PermissionDenied(
-                'Пользователь с ролью user не может сменить себе роль')
         serializer = UserSelfSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -71,7 +68,7 @@ class UserSelfView(APIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by('id')
     pagination_class = UserPagination
     serializer_class = UserSerializer
     permission_classes = (HasAdminRole,)
