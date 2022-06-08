@@ -1,14 +1,14 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
-
 from .serializers import (CommentSerializer, ReviewSerializer)
+
 from reviews.models import Review, Title
 from .permissions import HasAdminRole, HasModeratorRole, IsOwner
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsOwner, HasAdminRole, HasModeratorRole)
     serializer_class = ReviewSerializer
+    permission_classes = (IsOwner, HasAdminRole, HasModeratorRole)
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
