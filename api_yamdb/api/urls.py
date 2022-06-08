@@ -3,6 +3,7 @@ from rest_framework import routers
 
 from api.views import (MyTokenObtainPairView, SignUpAPIView, UserViewSet,
                        UserSelfView, CommentViewSet, ReviewViewSet)
+from .views import CategoriesViewSet, GenresViewSet, TitlesViewSet
 
 router_v1 = routers.DefaultRouter()
 router_v1.register('users', UserViewSet, 'user')
@@ -14,6 +15,9 @@ router_v1.register(
     r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
     CommentViewSet, basename='comments'
 )
+router_v1.register(r'categories', CategoriesViewSet)
+router_v1.register(r'genres', GenresViewSet)
+router_v1.register(r'titles', TitlesViewSet)
 
 urlpatterns = [
     path('v1/auth/signup/', SignUpAPIView.as_view(), name='signup'),
