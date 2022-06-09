@@ -2,6 +2,7 @@ from django.contrib.auth.base_user import BaseUserManager
 
 
 class UserManager(BaseUserManager):
+
     def create_user(self, username, email, password=None, role='user',
                     **extra_fields):
         if username is None:

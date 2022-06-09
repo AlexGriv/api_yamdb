@@ -1,26 +1,22 @@
+from tokenize import Comment
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets, filters
-from rest_framework.permissions import (
-    AllowAny,
-    IsAuthenticated,
-)
+from rest_framework import status, viewsets, filters, mixins
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from reviews.models import Review, Categories, Genres, Title
-from .paginations import UserPagination
-from .permissions import (
-    HasAdminRole,
-    IsAdminOrReadOnly)
-
-from .mixins import CreateListRetrieveDestroyViewSet
+from reviews.models import Review, Categories, Genres, Title, Comment
 from .filters import TitleFilter
+from .paginations import CustomPagination
+from .permissions import (HasAdminRole, IsAdminOrReadOnly,
+                          CommentReviewPermission)
 from .serializers import (SignUpSerializer, UserSerializer,
                           MyTokenObtainPairSerializer, UserSelfSerializer,
                           CommentSerializer, ReviewSerializer,
@@ -85,7 +81,7 @@ class UserSelfView(APIView):
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('id')
-    pagination_class = UserPagination
+    pagination_class = CustomPagination
     serializer_class = UserSerializer
     permission_classes = (HasAdminRole,)
     lookup_field = 'username'
@@ -93,24 +89,25 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (CommentReviewPermission,)
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         return title.reviews.all()
 
     def perform_create(self, serializer):
-        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         serializer.save(author=self.request.user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (CommentReviewPermission,)
 
     def get_queryset(self):
         review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
-        return review.comments.all()
+        return Comment.objects.get(review=review)
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id')
@@ -119,20 +116,28 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, review=review)
 
 
-class CategoriesViewSet(CreateListRetrieveDestroyViewSet):
+class CategoriesViewSet(mixins.CreateModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.DestroyModelMixin,
+                        viewsets.GenericViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategoriesSerializer
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
+    pagination_class = CustomPagination
     search_fields = ('name',)
     lookup_field = 'slug'
 
 
-class GenresViewSet(CreateListRetrieveDestroyViewSet):
+class GenresViewSet(mixins.CreateModelMixin,
+                    mixins.ListModelMixin,
+                    mixins.DestroyModelMixin,
+                    viewsets.GenericViewSet):
     queryset = Genres.objects.all()
     serializer_class = GenresSerializer
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
+    pagination_class = CustomPagination
     search_fields = ('name',)
     lookup_field = 'slug'
 
@@ -140,6 +145,7 @@ class GenresViewSet(CreateListRetrieveDestroyViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     permission_classes = (IsAdminOrReadOnly,)
+    pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
 
