@@ -47,47 +47,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username
 
 
-class Review(models.Model):
-    title = models.ForeignKey(
-        Title, on_delete=models.CASCADE,
-        related_name='reviews')
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='reviews')
-    text = models.TextField()
-    pub_date = models.DateTimeField(
-        auto_now_add=True,
-        db_index=True
-    )
-    score = models.PositiveSmallIntegerField(
-        verbose_name='Рейтинг',
-        validators=[
-            MinValueValidator(1, 'Допустимы значения от 1 до 10'),
-            MaxValueValidator(10, 'Допустимы значения от 1 до 10')
-        ]
-    )
-
-    def __str__(self):
-        return self.author
-
-
-class Comment(models.Model):
-    review = models.ForeignKey(
-        Title, on_delete=models.CASCADE,
-        related_name='comments')
-    text = models.TextField()
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='comments')
-    pub_date = models.DateTimeField(
-        auto_now_add=True,
-        db_index=True
-    )
-
-    class Meta:
-        ordering = ['pub_date']
-  
-  
 class Categories(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField(max_length=50, unique=True)
@@ -110,7 +69,7 @@ class Genres(models.Model):
         return self.name
 
 
-class Titles(models.Model):
+class Title(models.Model):
     name = models.CharField('Название', max_length=200)
     description = models.TextField('Описание', blank=True)
     year = models.IntegerField('Год издания', validators=[validate_year])
@@ -136,3 +95,42 @@ class Titles(models.Model):
     def __str__(self):
         return self.name
 
+
+class Review(models.Model):
+    title = models.ForeignKey(
+        Title, on_delete=models.CASCADE,
+        related_name='reviews')
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='reviews')
+    text = models.TextField()
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True
+    )
+    score = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1, 'Допустимы значения от 1 до 10'),
+            MaxValueValidator(10, 'Допустимы значения от 1 до 10')
+        ]
+    )
+
+    def __str__(self):
+        return self.author
+
+
+class Comment(models.Model):
+    review = models.ForeignKey(
+        Title, on_delete=models.CASCADE,
+        related_name='comments')
+    text = models.TextField()
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='comments')
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True
+    )
+
+    class Meta:
+        ordering = ['pub_date']

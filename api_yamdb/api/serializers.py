@@ -10,7 +10,14 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from reviews.models import Comment, Review, Title, USER_ROLE_CHOICES, Categories, Genres, Titles
+from reviews.models import (
+    Comment,
+    Review,
+    Title,
+    USER_ROLE_CHOICES,
+    Categories,
+    Genres,
+)
 
 User = get_user_model()
 
@@ -115,7 +122,7 @@ class UserSerializer(serializers.ModelSerializer):
             raise exceptions.ValidationError(error)
         return super().create(validated_data)
 
-      
+
 class ReviewSerializer(serializers.ModelSerializer):
     title = serializers.SlugRelatedField(
         slug_field='name',
@@ -157,8 +164,8 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
-        
-        
+
+
 class CategoriesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categories
@@ -183,7 +190,7 @@ class TitleCreateSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Titles
+        model = Title
         fields = '__all__'
 
 
@@ -192,4 +199,5 @@ class TitleReadSerializer(serializers.ModelSerializer):
     genre = GenresSerializer(many=True, read_only=True)
 
     class Meta:
-        model = Titles
+        model = Title
+        fields = '__all__'
