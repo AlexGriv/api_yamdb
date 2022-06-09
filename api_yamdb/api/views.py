@@ -94,7 +94,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
-        return title.reviews.all()
+        return title.reviews.all().order_by('pk')
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -104,10 +104,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (CommentReviewPermission,)
+    pagination_class = CustomPagination
 
     def get_queryset(self):
-        review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
-        return Comment.objects.get(review=review)
+        review_id = self.kwargs.get("review_id")
+        return Comment.objects.filter(review__id=review_id)
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id')

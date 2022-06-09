@@ -118,10 +118,18 @@ class Review(models.Model):
     def __str__(self):
         return self.author
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'title'],
+                name='only_one_review'
+            )
+        ]
+
 
 class Comment(models.Model):
     review = models.ForeignKey(
-        Title, on_delete=models.CASCADE,
+        Review, on_delete=models.CASCADE,
         related_name='comments')
     text = models.TextField()
     author = models.ForeignKey(
