@@ -1,10 +1,11 @@
+import uuid
+
 from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import update_last_login
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers, exceptions
 from rest_framework.exceptions import ValidationError
@@ -26,10 +27,10 @@ User = get_user_model()
 class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email']
+        fields = ('username', 'email')
 
     def create(self, validated_data):
-        confirmation_code = get_random_string(length=32)
+        confirmation_code = str(uuid.uuid4())
         if validated_data['username'] == 'me':
             error = {'username': ['Нельзя создать пользователя с username me']}
             raise exceptions.ValidationError(error)
@@ -50,23 +51,23 @@ class MyTokenObtainSerializer(serializers.Serializer):
     token_class = None
 
     default_error_messages = {
-        "no_active_account": _(
-            "Активная учетная запись с указанными учетными данными не найдена")
+        'no_active_account': _(
+            'Активная учетная запись с указанными учетными данными не найдена')
     }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.fields[self.username_field] = serializers.CharField()
-        self.fields["confirmation_code"] = serializers.CharField()
+        self.fields['confirmation_code'] = serializers.CharField()
 
     def validate(self, attrs):
         authenticate_kwargs = {
             self.username_field: attrs[self.username_field],
-            "confirmation_code": attrs["confirmation_code"],
+            'confirmation_code': attrs['confirmation_code'],
         }
         try:
-            authenticate_kwargs["request"] = self.context["request"]
+            authenticate_kwargs['request'] = self.context['request']
         except KeyError:
             pass
 
@@ -74,8 +75,8 @@ class MyTokenObtainSerializer(serializers.Serializer):
 
         if not api_settings.USER_AUTHENTICATION_RULE(self.user):
             raise exceptions.NotFound(
-                self.error_messages["no_active_account"],
-                "no_active_account",
+                self.error_messages['no_active_account'],
+                'no_active_account',
             )
 
         return {}
@@ -93,7 +94,7 @@ class MyTokenObtainPairSerializer(MyTokenObtainSerializer):
 
         refresh = self.get_token(self.user)
 
-        data["access"] = str(refresh.access_token)
+        data['access'] = str(refresh.access_token)
 
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, self.user)
@@ -137,7 +138,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = ('author', 'title', 'id', 'text', 'score', 'pub_date')
 
     def validate(self, data):
         request = self.context['request']
@@ -164,7 +165,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ('author', 'review', 'id', 'text', 'pub_date')
 
 
 class CategoriesSerializer(serializers.ModelSerializer):
@@ -192,7 +193,15 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = '__all__'
+        fields = (
+            'id',
+            'name',
+            'description',
+            'year',
+            'category',
+            'genre',
+            'rating'
+        )
 
 
 class TitleReadSerializer(serializers.ModelSerializer):
@@ -202,7 +211,15 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = '__all__'
+        fields = (
+            'id',
+            'name',
+            'description',
+            'year',
+            'category',
+            'genre',
+            'rating'
+        )
 
     def get_rating(self, obj):
         return obj.reviews.aggregate(Avg('score'))['score__avg']

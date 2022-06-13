@@ -1,12 +1,12 @@
+import uuid
 from tokenize import Comment
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from django.utils.crypto import get_random_string
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets, filters, mixins
+from rest_framework import status, viewsets, filters
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,6 +14,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from reviews.models import Review, Categories, Genres, Title, Comment
 from .filters import TitleFilter
+from .mixins import ListCreateDestroyViewSet
 from .paginations import CustomPagination
 from .permissions import (HasAdminRole, IsAdminOrReadOnly,
                           CommentReviewPermission)
@@ -42,7 +43,7 @@ class SignUpAPIView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.get(**request.data)
-        confirmation_code = get_random_string(length=32)
+        confirmation_code = str(uuid.uuid4())
         user.confirmation_code = confirmation_code
         user.save()
         send_mail(
@@ -71,7 +72,6 @@ class UserSelfView(APIView):
 
     def patch(self, request):
         user = User.objects.get(username=request.user.username)
-        print(user.role, request.data.get('role'))
         serializer = UserSelfSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -107,7 +107,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        review_id = self.kwargs.get("review_id")
+        review_id = self.kwargs.get('review_id')
         return Comment.objects.filter(review__id=review_id)
 
     def perform_create(self, serializer):
@@ -117,10 +117,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, review=review)
 
 
-class CategoriesViewSet(mixins.CreateModelMixin,
-                        mixins.ListModelMixin,
-                        mixins.DestroyModelMixin,
-                        viewsets.GenericViewSet):
+class CategoriesViewSet(ListCreateDestroyViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategoriesSerializer
     permission_classes = (IsAdminOrReadOnly,)
@@ -130,17 +127,9 @@ class CategoriesViewSet(mixins.CreateModelMixin,
     lookup_field = 'slug'
 
 
-class GenresViewSet(mixins.CreateModelMixin,
-                    mixins.ListModelMixin,
-                    mixins.DestroyModelMixin,
-                    viewsets.GenericViewSet):
+class GenresViewSet(CategoriesViewSet):
     queryset = Genres.objects.all()
     serializer_class = GenresSerializer
-    permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (filters.SearchFilter,)
-    pagination_class = CustomPagination
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -151,6 +140,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
             return TitleCreateSerializer
         return TitleReadSerializer
