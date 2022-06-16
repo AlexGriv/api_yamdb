@@ -91,14 +91,10 @@ class MyTokenObtainPairSerializer(MyTokenObtainSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-
         refresh = self.get_token(self.user)
-
         data['access'] = str(refresh.access_token)
-
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, self.user)
-
         return data
 
 
